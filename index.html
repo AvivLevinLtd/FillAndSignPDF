@@ -72,7 +72,7 @@
 
     <div id="hint" class="hint" hidden></div>
 
-    <main id="viewer">
+    <main id="viewer" aria-label="Document">
       <section id="empty" class="empty">
         <div class="empty-card">
           <svg class="empty-icon" viewBox="0 0 48 48" aria-hidden="true"><path d="M12 4h17l11 11v27a2 2 0 0 1-2 2H12a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2Z" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linejoin="round"/><path d="M29 4v11h11" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linejoin="round"/><path d="M16 33c2-1 3-6 5-6s.5 4.5 3 4.5 2.5-2.5 4.5-3" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/></svg>
@@ -85,13 +85,23 @@
             Your files never leave this device. Everything happens in your browser.
           </p>
           <p class="credit">Made by <a href="https://avivlevin.com" target="_blank" rel="noopener">Aviv Levin Ltd.</a></p>
+          <nav class="legal-links" aria-label="Legal">
+            <a href="accessibility.html">Accessibility</a> ·
+            <a href="privacy.html">Privacy</a> ·
+            <a href="terms.html">Terms of use</a>
+          </nav>
         </div>
       </section>
       <div id="pages" class="pages"></div>
     </main>
 
     <div id="drop-overlay" class="drop-overlay" hidden><div>Drop the PDF to open it</div></div>
-    <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+    <div id="toast" class="toast" hidden></div>
+    <!-- Hint and toast text is also announced here: live regions that are
+         shown and hidden are not read reliably by screen readers. -->
+    <div id="announcer" class="sr-only" role="status" aria-live="polite"></div>
+    <p id="help-text" class="sr-only">Press Escape to stop typing. Then arrow keys move the box, Shift with an arrow moves it further, and Delete removes it.</p>
+    <p id="help-image" class="sr-only">Arrow keys move it, Shift with an arrow moves it further, plus and minus resize it, and Delete removes it.</p>
 
     <dialog id="sig-dialog" class="sig-dialog" aria-labelledby="sig-title">
       <form method="dialog">
@@ -103,29 +113,29 @@
         </header>
 
         <nav class="tabs" role="tablist">
-          <button type="button" role="tab" data-tab="saved">Saved</button>
-          <button type="button" role="tab" data-tab="draw">Draw</button>
-          <button type="button" role="tab" data-tab="upload">Upload image</button>
+          <button type="button" role="tab" data-tab="saved" id="sig-tab-saved" aria-controls="sig-panel-saved">Saved</button>
+          <button type="button" role="tab" data-tab="draw" id="sig-tab-draw" aria-controls="sig-panel-draw">Draw</button>
+          <button type="button" role="tab" data-tab="upload" id="sig-tab-upload" aria-controls="sig-panel-upload">Upload image</button>
         </nav>
 
-        <section data-panel="saved" role="tabpanel">
+        <section data-panel="saved" role="tabpanel" id="sig-panel-saved" aria-labelledby="sig-tab-saved">
           <div class="saved-grid"></div>
           <p class="saved-empty muted">No saved signatures yet. Draw or upload one and keep "Save for next time" ticked.</p>
         </section>
 
-        <section data-panel="draw" role="tabpanel">
-          <canvas class="pad" aria-label="Signature drawing area"></canvas>
+        <section data-panel="draw" role="tabpanel" id="sig-panel-draw" aria-labelledby="sig-tab-draw">
+          <canvas class="pad" aria-hidden="true"></canvas>
           <div class="pad-tools">
-            <span class="muted">Sign with your mouse, pen or finger</span>
+            <span class="muted">Sign with your mouse, pen or finger<span class="sr-only">. Drawing needs a pointer; to use the keyboard, choose the Upload image tab instead.</span></span>
             <div class="swatches" role="radiogroup" aria-label="Pen color">
-              <label title="Black"><input type="radio" name="sig-color" value="#111827" /><span style="background:#111827"></span></label>
-              <label title="Blue"><input type="radio" name="sig-color" value="#1d4ed8" /><span style="background:#1d4ed8"></span></label>
+              <label title="Black"><input type="radio" name="sig-color" value="#111827" aria-label="Black" /><span style="background:#111827"></span></label>
+              <label title="Blue"><input type="radio" name="sig-color" value="#1d4ed8" aria-label="Blue" /><span style="background:#1d4ed8"></span></label>
             </div>
             <button type="button" id="sig-clear" class="link">Clear</button>
           </div>
         </section>
 
-        <section data-panel="upload" role="tabpanel">
+        <section data-panel="upload" role="tabpanel" id="sig-panel-upload" aria-labelledby="sig-tab-upload">
           <label class="upload-drop">
             <input type="file" id="sig-file" accept="image/*" />
             <span>Choose an image of your signature (PNG, JPG…)</span>
@@ -135,6 +145,11 @@
         </section>
 
         <p class="sig-error" role="alert" hidden></p>
+
+        <p class="sig-legal muted">
+          This adds a basic electronic signature. It is not a certified or secure electronic signature
+          under Israel's Electronic Signature Law, which some documents and authorities require.
+        </p>
 
         <footer class="sig-footer">
           <label class="check"><input type="checkbox" id="sig-save" checked /> Save for next time</label>

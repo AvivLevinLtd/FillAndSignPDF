@@ -11,9 +11,15 @@ Nothing is uploaded: the PDF, your text and your signature stay on your device. 
 3. **Signature** (`S`): draw one with your mouse, pen or finger, or upload an image. Uploaded images can have their white background made transparent. Then click where it should go, drag it to move it, and drag its corner to resize it. Tick "Save for next time" to reuse it later.
 4. **Download PDF** (`Ctrl/Cmd+S`) saves `<name>-signed.pdf`.
 
-Other shortcuts: double-click the page to add text, `Del` removes the selected item, arrow keys nudge it (`Shift` moves 10 pt at a time), `Ctrl/Cmd+Z` undoes, and `Esc` exits the current tool.
+Other shortcuts: double-click the page to add text, `Del` removes the selected item, arrow keys nudge it (`Shift` moves 10 pt at a time), `+`/`-` resize a selected signature, `Ctrl/Cmd+Z` undoes, and `Esc` exits the current tool.
+
+Everything works without a mouse. Activating **Text** or **Signature** from the keyboard (or pressing `T`/`S` and then `Enter`) places the item in the middle of the screen, ready to move with the arrow keys. Tab to a signature to select it.
 
 Password-protected PDFs, and PDFs locked against editing, can't be modified.
+
+## Legal pages
+
+`accessibility.html` (accessibility statement), `privacy.html` and `terms.html` are static pages in Hebrew and English, linked from the start screen. Text in a `.todo` span is highlighted in yellow as a placeholder still to fill in.
 
 ## Development
 

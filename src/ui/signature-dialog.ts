@@ -36,6 +36,7 @@ export function openSignatureDialog(): Promise<string | null> {
   const saveBox = $<HTMLInputElement>(dialog, '#sig-save');
   const useBtn = $<HTMLButtonElement>(dialog, '#sig-use');
   const grid = $<HTMLDivElement>(dialog, '.saved-grid');
+  const tabButtons = [...dialog.querySelectorAll<HTMLButtonElement>('[data-tab]')];
 
   let tab: Tab = 'draw';
   let uploaded: string | null = null;
@@ -44,8 +45,9 @@ export function openSignatureDialog(): Promise<string | null> {
   const pad = new SignaturePad(canvas, () => refresh());
 
   const refresh = () => {
-    for (const b of dialog.querySelectorAll<HTMLButtonElement>('[data-tab]')) {
+    for (const b of tabButtons) {
       b.setAttribute('aria-selected', String(b.dataset.tab === tab));
+      b.tabIndex = b.dataset.tab === tab ? 0 : -1; // one tab stop; arrows move between tabs
     }
     for (const p of dialog.querySelectorAll<HTMLElement>('[data-panel]')) p.hidden = p.dataset.panel !== tab;
     useBtn.disabled = tab === 'saved' || (tab === 'draw' ? pad.isEmpty() : !uploaded);
@@ -72,7 +74,7 @@ export function openSignatureDialog(): Promise<string | null> {
         del.type = 'button';
         del.className = 'saved-delete';
         del.title = 'Delete this saved signature';
-        del.setAttribute('aria-label', 'Delete');
+        del.setAttribute('aria-label', `Delete saved signature ${i + 1}`);
         del.textContent = '×';
         del.onclick = () => {
           writeSaved(loadSaved().filter((_, j) => j !== i));
@@ -104,12 +106,25 @@ export function openSignatureDialog(): Promise<string | null> {
     resolve(src);
   };
 
-  const onTab = (e: Event) => {
-    const t = (e.currentTarget as HTMLElement).dataset.tab as Tab;
+  const selectTab = (t: Tab) => {
     tab = t;
     if (t === 'saved') renderSaved();
     refresh();
     if (t === 'draw') pad.resize();
+  };
+  const onTab = (e: Event) => selectTab((e.currentTarget as HTMLElement).dataset.tab as Tab);
+  const onTabKey = (e: KeyboardEvent) => {
+    const i = tabButtons.findIndex((b) => b.dataset.tab === tab);
+    const next =
+      e.key === 'ArrowRight' ? (i + 1) % tabButtons.length
+      : e.key === 'ArrowLeft' ? (i - 1 + tabButtons.length) % tabButtons.length
+      : e.key === 'Home' ? 0
+      : e.key === 'End' ? tabButtons.length - 1
+      : -1;
+    if (next < 0) return;
+    e.preventDefault();
+    selectTab(tabButtons[next].dataset.tab as Tab);
+    tabButtons[next].focus();
   };
   const onColor = (e: Event) => {
     pad.color = (e.target as HTMLInputElement).value;
@@ -128,10 +143,11 @@ export function openSignatureDialog(): Promise<string | null> {
     resolve(null);
   };
 
-  const tabButtons = [...dialog.querySelectorAll<HTMLButtonElement>('[data-tab]')];
+  const tabList = $<HTMLElement>(dialog, '[role="tablist"]');
   const colorInputs = [...dialog.querySelectorAll<HTMLInputElement>('input[name="sig-color"]')];
   const clearBtn = $<HTMLButtonElement>(dialog, '#sig-clear');
   tabButtons.forEach((b) => b.addEventListener('click', onTab));
+  tabList.addEventListener('keydown', onTabKey);
   colorInputs.forEach((c) => c.addEventListener('change', onColor));
   clearBtn.addEventListener('click', onClear);
   fileInput.addEventListener('change', onFile);
@@ -141,6 +157,7 @@ export function openSignatureDialog(): Promise<string | null> {
 
   function cleanup() {
     tabButtons.forEach((b) => b.removeEventListener('click', onTab));
+    tabList.removeEventListener('keydown', onTabKey);
     colorInputs.forEach((c) => c.removeEventListener('change', onColor));
     clearBtn.removeEventListener('click', onClear);
     fileInput.removeEventListener('change', onFile);

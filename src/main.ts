@@ -5,7 +5,7 @@ import { LINE_HEIGHT, newId, type Item } from './model';
 import { PasswordProtectedError, openPdf, renderPage } from './pdf/viewer';
 import { Store, type State } from './store';
 import { fontBytes, loadEditorFont } from './text/font';
-import { Overlay, type PageLayer } from './ui/overlay';
+import { MIN_IMAGE, Overlay, type PageLayer } from './ui/overlay';
 import { openSignatureDialog } from './ui/signature-dialog';
 
 interface PageView extends PageLayer {
@@ -36,6 +36,7 @@ const ui = {
   empty: $('empty'),
   hint: $('hint'),
   toast: $('toast'),
+  announcer: $('announcer'),
   dropOverlay: $('drop-overlay'),
   text: $<HTMLButtonElement>('btn-text'),
   sign: $<HTMLButtonElement>('btn-sign'),
@@ -94,6 +95,8 @@ async function openFile(file: File): Promise<void> {
     const container = document.createElement('div');
     container.className = 'page';
     container.dataset.page = String(i - 1);
+    container.setAttribute('role', 'group');
+    container.setAttribute('aria-label', `Page ${i} of ${pdf.numPages}`);
     const canvas = document.createElement('canvas');
     const layer = document.createElement('div');
     layer.className = 'layer';
@@ -104,6 +107,8 @@ async function openFile(file: File): Promise<void> {
   ui.pages.replaceChildren(...pages.map((p) => p.container));
   ui.viewer.scrollTo(0, 0);
   document.body.classList.add('has-doc');
+  // Focusable so keyboard users can scroll the pages.
+  ui.viewer.tabIndex = 0;
   document.title = `${file.name} · Fill & Sign PDF`;
 
   store.reset();
@@ -177,10 +182,10 @@ function addText(page: number, x: number, y: number): void {
   // Centre the first line vertically on the click.
   const item: Item = { id, kind: 'text', page, x, y: Math.max(0, y - (fontSize * LINE_HEIGHT) / 2), text: '', fontSize, color };
   store.commit([...items, item], { coalesceKey: `type:${id}`, patch: { selectedId: id } });
-  overlay.focusText(id);
+  overlay.focusItem(id);
 }
 
-async function addImage(page: number, x: number, y: number, src: string): Promise<void> {
+async function addImage(page: number, x: number, y: number, src: string): Promise<string> {
   const view = doc!.pages[page];
   const img = await loadImage(src);
   const aspect = img.naturalHeight / img.naturalWidth;
@@ -198,6 +203,41 @@ async function addImage(page: number, x: number, y: number, src: string): Promis
     y: clamp(y - height / 2, 0, view.height - height),
   };
   store.commit([...store.get().items, item], { patch: { selectedId: item.id, tool: 'select', pendingImage: null } });
+  return item.id;
+}
+
+/** The point at the centre of the visible part of the viewer, on the nearest page. */
+function visibleCenter(): { page: number; x: number; y: number } | null {
+  if (!doc) return null;
+  const v = ui.viewer.getBoundingClientRect();
+  const cx = v.left + v.width / 2;
+  const cy = v.top + v.height / 2;
+  let page = 0;
+  let best = Infinity;
+  doc.pages.forEach((p, i) => {
+    const r = p.el.getBoundingClientRect();
+    const dist = Math.max(r.top - cy, cy - r.bottom, 0);
+    if (dist < best) [page, best] = [i, dist];
+  });
+  const view = doc.pages[page];
+  const r = view.el.getBoundingClientRect();
+  const { zoom } = store.get();
+  return { page, x: clamp((cx - r.left) / zoom, 0, view.width), y: clamp((cy - r.top) / zoom, 0, view.height) };
+}
+
+// Keyboard alternatives to clicking on the page: place at the centre of the
+// screen, then move with the arrow keys.
+function addTextAtCenter(): void {
+  const c = visibleCenter();
+  if (!c) return;
+  store.set({ tool: 'select', pendingImage: null });
+  addText(c.page, clamp(c.x - 60, 0, doc!.pages[c.page].width - 40), c.y);
+}
+
+async function addImageAtCenter(src: string): Promise<void> {
+  const c = visibleCenter();
+  if (!c) return;
+  overlay.focusItem(await addImage(c.page, c.x, c.y, src));
 }
 
 ui.pages.addEventListener('click', (e) => {
@@ -237,14 +277,17 @@ ui.pages.addEventListener('pointermove', (e) => {
 });
 ui.pages.addEventListener('pointerleave', () => (ghost.hidden = true));
 
-async function chooseSignature(): Promise<void> {
+/** `placeNow`: put the signature at the centre of the screen instead of waiting for a click. */
+async function chooseSignature(placeNow = false): Promise<void> {
   if (!doc) return;
   if (store.get().tool === 'image') {
     store.set({ tool: 'select', pendingImage: null });
     return;
   }
   const src = await openSignatureDialog();
-  if (src) store.set({ tool: 'image', pendingImage: src, selectedId: null });
+  if (!src) return;
+  if (placeNow) await addImageAtCenter(src);
+  else store.set({ tool: 'image', pendingImage: src, selectedId: null });
 }
 
 function toggleTextTool(): void {
@@ -317,18 +360,22 @@ function onState(state: State): void {
   ui.undo.disabled = !store.canUndo();
   ui.redo.disabled = !store.canRedo();
   ui.zoomLevel.textContent = `${Math.round(state.zoom * 100)}%`;
+  ui.zoomLevel.setAttribute('aria-label', `Fit to width (zoom is ${Math.round(state.zoom * 100)}%)`);
   if (document.activeElement !== ui.fontSize) ui.fontSize.value = String(state.fontSize);
   ui.color.value = state.color;
   if (state.tool !== 'image') ghost.hidden = true;
 
   const hint =
     state.tool === 'text'
-      ? 'Click anywhere on the page to type. Press Esc when you are done.'
+      ? 'Click anywhere on the page to type, or press Enter to add text in the middle of the screen. Esc cancels.'
       : state.tool === 'image'
-        ? 'Click where the signature should go. Press Esc to cancel.'
+        ? 'Click where the signature should go, or press Enter to place it in the middle of the screen. Esc cancels.'
         : '';
-  ui.hint.textContent = hint;
-  ui.hint.hidden = !hint;
+  if (hint !== ui.hint.textContent) {
+    ui.hint.textContent = hint;
+    ui.hint.hidden = !hint;
+    if (hint) announce(hint);
+  }
 }
 store.subscribe(onState);
 onState(store.get());
@@ -340,6 +387,14 @@ function toast(message: string, error = false): void {
   ui.toast.hidden = false;
   clearTimeout(toastTimer);
   toastTimer = window.setTimeout(() => (ui.toast.hidden = true), error ? 6000 : 3000);
+  announce(message);
+}
+
+/** Read a message out to screen readers. */
+function announce(message: string): void {
+  // Clear first so repeating the same message is announced again.
+  ui.announcer.textContent = '';
+  setTimeout(() => (ui.announcer.textContent = message), 50);
 }
 
 // ---------- Wiring ----------
@@ -352,8 +407,10 @@ ui.fileInput.addEventListener('change', () => {
   ui.fileInput.value = '';
   if (file) void openFile(file);
 });
-ui.text.addEventListener('click', toggleTextTool);
-ui.sign.addEventListener('click', () => void chooseSignature());
+// A click with detail 0 came from the keyboard (Enter/Space on the button):
+// there is no pointer to place with, so place at the centre of the screen.
+ui.text.addEventListener('click', (e) => (e.detail === 0 ? addTextAtCenter() : toggleTextTool()));
+ui.sign.addEventListener('click', (e) => void chooseSignature(e.detail === 0));
 ui.undo.addEventListener('click', () => store.undo());
 ui.redo.addEventListener('click', () => store.redo());
 $('btn-zoom-in').addEventListener('click', () => stepZoom(1));
@@ -404,6 +461,30 @@ document.addEventListener('keydown', (e) => {
   const state = store.get();
   const selected = state.items.find((i) => i.id === state.selectedId);
   switch (e.key) {
+    case 'Enter':
+      if (target.closest('button, a')) return; // let the focused control handle it
+      if (state.tool === 'text') {
+        e.preventDefault();
+        addTextAtCenter();
+      } else if (state.tool === 'image' && state.pendingImage) {
+        e.preventDefault();
+        void addImageAtCenter(state.pendingImage);
+      }
+      break;
+    case '+':
+    case '=':
+    case '-':
+    case '_': {
+      if (selected?.kind !== 'image') return;
+      e.preventDefault();
+      const view = doc.pages[selected.page];
+      const aspect = selected.height / selected.width;
+      const factor = e.key === '+' || e.key === '=' ? 1.1 : 1 / 1.1;
+      const maxWidth = Math.min(view.width - selected.x, (view.height - selected.y) / aspect);
+      const width = clamp(selected.width * factor, MIN_IMAGE, Math.max(MIN_IMAGE, maxWidth));
+      store.updateItem(selected.id, { width, height: width * aspect }, `size:${selected.id}`);
+      break;
+    }
     case 'Escape':
       if (state.tool !== 'select') store.set({ tool: 'select', pendingImage: null });
       else store.set({ selectedId: null });
@@ -413,6 +494,8 @@ document.addEventListener('keydown', (e) => {
       if (selected) {
         e.preventDefault();
         store.removeItem(selected.id);
+        // Keep keyboard focus in the document rather than losing it to <body>.
+        if (target.closest('.item')) ui.viewer.focus({ preventScroll: true });
       }
       break;
     case 'ArrowLeft':
