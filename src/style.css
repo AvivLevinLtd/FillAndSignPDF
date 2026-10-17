@@ -459,6 +459,20 @@ body.has-doc .empty {
   color: #16a34a;
 }
 
+.empty .credit {
+  margin: 14px 0 0;
+  font-size: 12px;
+}
+
+.credit a {
+  color: inherit;
+  text-underline-offset: 2px;
+}
+
+.credit a:hover {
+  color: var(--accent);
+}
+
 /* ---------- Drop overlay & toast ---------- */
 
 .drop-overlay {

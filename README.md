@@ -31,6 +31,10 @@ Every push to `main` runs the tests, builds the app, and publishes it to GitHub 
 
 The site is served at `https://<owner>.github.io/FillAndSignPDF/`. If you rename the repository, update `base` in `vite.config.ts` to match.
 
+## License
+
+Copyright (C) 2026 [Aviv Levin Ltd.](https://avivlevin.com) This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version. See [`LICENSE`](LICENSE).
+
 ## Credits
 
 Text is set in [Alef](https://alef.hagilda.com/) by HaGilda & Mushon Zer-Aviv, under the SIL Open Font License (`src/assets/fonts/Alef-OFL.txt`). PDF rendering uses [pdf.js](https://mozilla.github.io/pdf.js/), and PDF writing uses [pdf-lib](https://pdf-lib.js.org/).
