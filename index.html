@@ -14,79 +14,76 @@
 
       <div class="group">
         <button type="button" id="btn-open" title="Open a PDF (Ctrl+O)">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5a2 2 0 0 1 2-2h4l2 2h6a2 2 0 0 1 2 2v1H8.5a2 2 0 0 0-1.9 1.4L4 17V5Zm2.6 5.4A1 1 0 0 1 7.5 10H21a1 1 0 0 1 .95 1.3l-2.3 7A1 1 0 0 1 18.7 19H4.6a.6.6 0 0 1-.57-.8l2.57-7.8Z"/></svg>
+          <svg viewBox="0 0 24 24"><path d="M4 5a2 2 0 0 1 2-2h4l2 2h6a2 2 0 0 1 2 2v1H8.5a2 2 0 0 0-1.9 1.4L4 17V5Zm2.6 5.4A1 1 0 0 1 7.5 10H21a1 1 0 0 1 .95 1.3l-2.3 7A1 1 0 0 1 18.7 19H4.6a.6.6 0 0 1-.57-.8l2.57-7.8Z"/></svg>
           <span>Open</span>
         </button>
         <input type="file" id="file-input" accept="application/pdf,.pdf" hidden />
       </div>
 
       <div class="group needs-doc">
-        <button type="button" id="btn-text" class="tool" aria-pressed="false" title="Add text: click on the page (T)">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h14v4h-2V6h-4v12h2v2H9v-2h2V6H7v2H5V4Z"/></svg>
+        <button type="button" id="btn-text" class="tool" title="Add text: click on the page (T)">
+          <svg viewBox="0 0 24 24"><path d="M5 4h14v4h-2V6h-4v12h2v2H9v-2h2V6H7v2H5V4Z"/></svg>
           <span>Text</span>
         </button>
-        <button type="button" id="btn-sign" class="tool" aria-pressed="false" title="Add a signature or image (S)">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 17.5c2.5-.5 3.5-7.5 6-7.5 2 0 .5 5.5 3 5.5 1.7 0 2.4-2.8 4-3.4M3 21h18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="m15.5 4.5 3 3L13 13l-3.5.5.5-3.5 5.5-5.5Z"/></svg>
+        <button type="button" id="btn-sign" class="tool" title="Add a signature or image (S)">
+          <svg viewBox="0 0 24 24"><path d="M3 17.5c2.5-.5 3.5-7.5 6-7.5 2 0 .5 5.5 3 5.5 1.7 0 2.4-2.8 4-3.4M3 21h18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="m15.5 4.5 3 3L13 13l-3.5.5.5-3.5 5.5-5.5Z"/></svg>
           <span>Signature</span>
         </button>
       </div>
 
       <div class="group needs-doc" id="text-props">
         <label class="field" title="Font size">
-          <span class="sr-only">Font size</span>
           <input type="number" id="font-size" min="4" max="96" step="1" value="12" />
           <span class="unit">pt</span>
         </label>
         <label class="field color" title="Text color">
-          <span class="sr-only">Text color</span>
           <input type="color" id="text-color" value="#111827" />
         </label>
       </div>
 
       <div class="group needs-doc">
-        <button type="button" id="btn-undo" class="icon" title="Undo (Ctrl+Z)" aria-label="Undo">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5 4 10l5 5v-3.5h5a4 4 0 0 1 0 8h-3v2h3a6 6 0 0 0 0-12H9V5Z"/></svg>
+        <button type="button" id="btn-undo" class="icon" title="Undo (Ctrl+Z)">
+          <svg viewBox="0 0 24 24"><path d="M9 5 4 10l5 5v-3.5h5a4 4 0 0 1 0 8h-3v2h3a6 6 0 0 0 0-12H9V5Z"/></svg>
         </button>
-        <button type="button" id="btn-redo" class="icon" title="Redo (Ctrl+Shift+Z)" aria-label="Redo">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 5 5 5-5 5v-3.5h-5a4 4 0 0 0 0 8h3v2h-3a6 6 0 0 1 0-12h5V5Z"/></svg>
+        <button type="button" id="btn-redo" class="icon" title="Redo (Ctrl+Shift+Z)">
+          <svg viewBox="0 0 24 24"><path d="m15 5 5 5-5 5v-3.5h-5a4 4 0 0 0 0 8h3v2h-3a6 6 0 0 1 0-12h5V5Z"/></svg>
         </button>
       </div>
 
       <div class="group needs-doc zoom">
-        <button type="button" id="btn-zoom-out" class="icon" title="Zoom out (Ctrl+-)" aria-label="Zoom out">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 11h14v2H5z"/></svg>
+        <button type="button" id="btn-zoom-out" class="icon" title="Zoom out (Ctrl+-)">
+          <svg viewBox="0 0 24 24"><path d="M5 11h14v2H5z"/></svg>
         </button>
         <button type="button" id="btn-zoom-fit" class="zoom-level" title="Fit to width">100%</button>
-        <button type="button" id="btn-zoom-in" class="icon" title="Zoom in (Ctrl+=)" aria-label="Zoom in">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M11 5h2v6h6v2h-6v6h-2v-6H5v-2h6z"/></svg>
+        <button type="button" id="btn-zoom-in" class="icon" title="Zoom in (Ctrl+=)">
+          <svg viewBox="0 0 24 24"><path d="M11 5h2v6h6v2h-6v6h-2v-6H5v-2h6z"/></svg>
         </button>
       </div>
 
       <div class="spacer"></div>
 
       <button type="button" id="btn-download" class="primary needs-doc" title="Save as a new PDF (Ctrl+S)">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M11 3h2v9.6l3.3-3.3 1.4 1.4L12 16.4l-5.7-5.7 1.4-1.4 3.3 3.3V3ZM4 19h16v2H4z"/></svg>
+        <svg viewBox="0 0 24 24"><path d="M11 3h2v9.6l3.3-3.3 1.4 1.4L12 16.4l-5.7-5.7 1.4-1.4 3.3 3.3V3ZM4 19h16v2H4z"/></svg>
         <span>Download PDF</span>
       </button>
     </header>
 
     <div id="hint" class="hint" hidden></div>
 
-    <main id="viewer" aria-label="Document">
+    <main id="viewer">
       <section id="empty" class="empty">
         <div class="empty-card">
-          <svg class="empty-icon" viewBox="0 0 48 48" aria-hidden="true"><path d="M12 4h17l11 11v27a2 2 0 0 1-2 2H12a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2Z" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linejoin="round"/><path d="M29 4v11h11" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linejoin="round"/><path d="M16 33c2-1 3-6 5-6s.5 4.5 3 4.5 2.5-2.5 4.5-3" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/></svg>
+          <svg class="empty-icon" viewBox="0 0 48 48"><path d="M12 4h17l11 11v27a2 2 0 0 1-2 2H12a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2Z" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linejoin="round"/><path d="M29 4v11h11" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linejoin="round"/><path d="M16 33c2-1 3-6 5-6s.5 4.5 3 4.5 2.5-2.5 4.5-3" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/></svg>
           <h1>Fill and sign a PDF</h1>
           <p>Add text in Hebrew or English and place your signature anywhere, then download a new PDF.</p>
           <button type="button" id="btn-open-empty" class="primary large">Choose a PDF</button>
           <p class="muted">or drop a file anywhere on this page</p>
           <p class="privacy">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2 4 5v6c0 5 3.4 9.4 8 11 4.6-1.6 8-6 8-11V5l-8-3Zm-1 14-4-4 1.4-1.4L11 13.2l4.6-4.6L17 10l-6 6Z"/></svg>
+            <svg viewBox="0 0 24 24"><path d="M12 2 4 5v6c0 5 3.4 9.4 8 11 4.6-1.6 8-6 8-11V5l-8-3Zm-1 14-4-4 1.4-1.4L11 13.2l4.6-4.6L17 10l-6 6Z"/></svg>
             Your files never leave this device. Everything happens in your browser.
           </p>
           <p class="credit">Made by <a href="https://avivlevin.com" target="_blank" rel="noopener">Aviv Levin Ltd.</a></p>
-          <nav class="legal-links" aria-label="Legal">
-            <a href="accessibility.html">Accessibility</a> ·
+          <nav class="legal-links">
             <a href="privacy.html">Privacy</a> ·
             <a href="terms.html">Terms of use</a>
           </nav>
@@ -97,45 +94,40 @@
 
     <div id="drop-overlay" class="drop-overlay" hidden><div>Drop the PDF to open it</div></div>
     <div id="toast" class="toast" hidden></div>
-    <!-- Hint and toast text is also announced here: live regions that are
-         shown and hidden are not read reliably by screen readers. -->
-    <div id="announcer" class="sr-only" role="status" aria-live="polite"></div>
-    <p id="help-text" class="sr-only">Press Escape to stop typing. Then arrow keys move the box, Shift with an arrow moves it further, and Delete removes it.</p>
-    <p id="help-image" class="sr-only">Arrow keys move it, Shift with an arrow moves it further, plus and minus resize it, and Delete removes it.</p>
 
-    <dialog id="sig-dialog" class="sig-dialog" aria-labelledby="sig-title">
+    <dialog id="sig-dialog" class="sig-dialog">
       <form method="dialog">
         <header class="sig-header">
           <h2 id="sig-title">Add a signature</h2>
-          <button value="cancel" class="icon" aria-label="Close" title="Close (Esc)">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6.4 5 5.6 5.6L17.6 5 19 6.4 13.4 12l5.6 5.6-1.4 1.4-5.6-5.6L6.4 19 5 17.6l5.6-5.6L5 6.4 6.4 5Z"/></svg>
+          <button value="cancel" class="icon" title="Close (Esc)">
+            <svg viewBox="0 0 24 24"><path d="m6.4 5 5.6 5.6L17.6 5 19 6.4 13.4 12l5.6 5.6-1.4 1.4-5.6-5.6L6.4 19 5 17.6l5.6-5.6L5 6.4 6.4 5Z"/></svg>
           </button>
         </header>
 
-        <nav class="tabs" role="tablist">
-          <button type="button" role="tab" data-tab="saved" id="sig-tab-saved" aria-controls="sig-panel-saved">Saved</button>
-          <button type="button" role="tab" data-tab="draw" id="sig-tab-draw" aria-controls="sig-panel-draw">Draw</button>
-          <button type="button" role="tab" data-tab="upload" id="sig-tab-upload" aria-controls="sig-panel-upload">Upload image</button>
+        <nav class="tabs">
+          <button type="button" data-tab="saved" id="sig-tab-saved">Saved</button>
+          <button type="button" data-tab="draw" id="sig-tab-draw">Draw</button>
+          <button type="button" data-tab="upload" id="sig-tab-upload">Upload image</button>
         </nav>
 
-        <section data-panel="saved" role="tabpanel" id="sig-panel-saved" aria-labelledby="sig-tab-saved">
+        <section data-panel="saved" id="sig-panel-saved">
           <div class="saved-grid"></div>
           <p class="saved-empty muted">No saved signatures yet. Draw or upload one and keep "Save for next time" ticked.</p>
         </section>
 
-        <section data-panel="draw" role="tabpanel" id="sig-panel-draw" aria-labelledby="sig-tab-draw">
-          <canvas class="pad" aria-hidden="true"></canvas>
+        <section data-panel="draw" id="sig-panel-draw">
+          <canvas class="pad"></canvas>
           <div class="pad-tools">
-            <span class="muted">Sign with your mouse, pen or finger<span class="sr-only">. Drawing needs a pointer; to use the keyboard, choose the Upload image tab instead.</span></span>
-            <div class="swatches" role="radiogroup" aria-label="Pen color">
-              <label title="Black"><input type="radio" name="sig-color" value="#111827" aria-label="Black" /><span style="background:#111827"></span></label>
-              <label title="Blue"><input type="radio" name="sig-color" value="#1d4ed8" aria-label="Blue" /><span style="background:#1d4ed8"></span></label>
+            <span class="muted">Sign with your mouse, pen or finger</span>
+            <div class="swatches">
+              <label title="Black"><input type="radio" name="sig-color" value="#111827" /><span style="background:#111827"></span></label>
+              <label title="Blue"><input type="radio" name="sig-color" value="#1d4ed8" /><span style="background:#1d4ed8"></span></label>
             </div>
             <button type="button" id="sig-clear" class="link">Clear</button>
           </div>
         </section>
 
-        <section data-panel="upload" role="tabpanel" id="sig-panel-upload" aria-labelledby="sig-tab-upload">
+        <section data-panel="upload" id="sig-panel-upload">
           <label class="upload-drop">
             <input type="file" id="sig-file" accept="image/*" />
             <span>Choose an image of your signature (PNG, JPG…)</span>
@@ -144,7 +136,7 @@
           <label class="check"><input type="checkbox" id="sig-remove-white" checked /> Make white background transparent</label>
         </section>
 
-        <p class="sig-error" role="alert" hidden></p>
+        <p class="sig-error" hidden></p>
 
         <p class="sig-legal muted">
           This adds a basic electronic signature. It is not a certified or secure electronic signature

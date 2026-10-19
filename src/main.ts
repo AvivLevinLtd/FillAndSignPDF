@@ -36,7 +36,6 @@ const ui = {
   empty: $('empty'),
   hint: $('hint'),
   toast: $('toast'),
-  announcer: $('announcer'),
   dropOverlay: $('drop-overlay'),
   text: $<HTMLButtonElement>('btn-text'),
   sign: $<HTMLButtonElement>('btn-sign'),
@@ -95,8 +94,6 @@ async function openFile(file: File): Promise<void> {
     const container = document.createElement('div');
     container.className = 'page';
     container.dataset.page = String(i - 1);
-    container.setAttribute('role', 'group');
-    container.setAttribute('aria-label', `Page ${i} of ${pdf.numPages}`);
     const canvas = document.createElement('canvas');
     const layer = document.createElement('div');
     layer.className = 'layer';
@@ -107,8 +104,6 @@ async function openFile(file: File): Promise<void> {
   ui.pages.replaceChildren(...pages.map((p) => p.container));
   ui.viewer.scrollTo(0, 0);
   document.body.classList.add('has-doc');
-  // Focusable so keyboard users can scroll the pages.
-  ui.viewer.tabIndex = 0;
   document.title = `${file.name} · Fill & Sign PDF`;
 
   store.reset();
@@ -354,13 +349,12 @@ async function download(): Promise<void> {
 
 function onState(state: State): void {
   overlay.render(state);
-  ui.text.setAttribute('aria-pressed', String(state.tool === 'text'));
-  ui.sign.setAttribute('aria-pressed', String(state.tool === 'image'));
+  ui.text.classList.toggle('active', state.tool === 'text');
+  ui.sign.classList.toggle('active', state.tool === 'image');
   ui.pages.dataset.tool = state.tool;
   ui.undo.disabled = !store.canUndo();
   ui.redo.disabled = !store.canRedo();
   ui.zoomLevel.textContent = `${Math.round(state.zoom * 100)}%`;
-  ui.zoomLevel.setAttribute('aria-label', `Fit to width (zoom is ${Math.round(state.zoom * 100)}%)`);
   if (document.activeElement !== ui.fontSize) ui.fontSize.value = String(state.fontSize);
   ui.color.value = state.color;
   if (state.tool !== 'image') ghost.hidden = true;
@@ -374,7 +368,6 @@ function onState(state: State): void {
   if (hint !== ui.hint.textContent) {
     ui.hint.textContent = hint;
     ui.hint.hidden = !hint;
-    if (hint) announce(hint);
   }
 }
 store.subscribe(onState);
@@ -387,14 +380,6 @@ function toast(message: string, error = false): void {
   ui.toast.hidden = false;
   clearTimeout(toastTimer);
   toastTimer = window.setTimeout(() => (ui.toast.hidden = true), error ? 6000 : 3000);
-  announce(message);
-}
-
-/** Read a message out to screen readers. */
-function announce(message: string): void {
-  // Clear first so repeating the same message is announced again.
-  ui.announcer.textContent = '';
-  setTimeout(() => (ui.announcer.textContent = message), 50);
 }
 
 // ---------- Wiring ----------

@@ -32,15 +32,6 @@ svg {
   flex: none;
 }
 
-.sr-only {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  overflow: hidden;
-  clip: rect(0 0 0 0);
-  white-space: nowrap;
-}
-
 .muted {
   color: var(--muted);
 }
@@ -104,7 +95,7 @@ button.link {
   color: var(--accent);
 }
 
-button.tool[aria-pressed='true'] {
+button.tool.active {
   background: var(--accent-soft);
   border-color: var(--accent);
   color: var(--accent);
@@ -556,7 +547,7 @@ body.has-doc .empty {
   color: var(--text);
 }
 
-.tabs button[aria-selected='true'] {
+.tabs button.active {
   color: var(--accent);
   border-bottom-color: var(--accent);
   font-weight: 600;

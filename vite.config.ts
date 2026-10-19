@@ -85,7 +85,7 @@ export default defineConfig({
     chunkSizeWarningLimit: 1300,
     rollupOptions: {
       // The app plus the static legal pages linked from its start screen.
-      input: ['index.html', 'accessibility.html', 'privacy.html', 'terms.html'].map((page) =>
+      input: ['index.html', 'privacy.html', 'terms.html'].map((page) =>
         fileURLToPath(new URL(page, import.meta.url)),
       ),
     },
