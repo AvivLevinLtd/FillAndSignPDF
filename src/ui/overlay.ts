@@ -83,8 +83,8 @@ export class Overlay {
     const el = document.createElement('div');
     el.className = 'item item-text';
     el.innerHTML = `
-      <textarea dir="auto" rows="1" wrap="off" spellcheck="false" autocomplete="off" aria-describedby="help-text"></textarea>
-      <button type="button" class="item-delete" title="Delete (Del)" aria-label="Delete text box">×</button>`;
+      <textarea dir="auto" rows="1" wrap="off" spellcheck="false" autocomplete="off"></textarea>
+      <button type="button" class="item-delete" title="Delete (Del)">×</button>`;
     const ta = el.querySelector('textarea')!;
     ta.style.fontFamily = FONT_FAMILY;
     ta.style.lineHeight = String(LINE_HEIGHT);
@@ -112,7 +112,6 @@ export class Overlay {
     const ta = el.querySelector('textarea')!;
     const fontPx = item.fontSize * zoom;
     if (ta.value !== item.text) ta.value = item.text;
-    setAttr(ta, 'aria-label', `Text box on page ${item.page + 1}`);
     const lines = item.text.split('\n').length;
     const width = Math.max(measureLines(item.text, fontPx), fontPx * 0.6);
     Object.assign(ta.style, {
@@ -130,11 +129,9 @@ export class Overlay {
     const el = document.createElement('div');
     el.className = 'item item-image';
     el.tabIndex = 0;
-    el.setAttribute('role', 'group');
-    el.setAttribute('aria-describedby', 'help-image');
     el.innerHTML = `
       <img alt="" draggable="false">
-      <button type="button" class="item-delete" title="Delete (Del)" aria-label="Delete signature">×</button>
+      <button type="button" class="item-delete" title="Delete (Del)">×</button>
       <div class="item-resize" title="Drag to resize (or press + and −)"></div>`;
     el.querySelector('.item-resize')!.addEventListener('pointerdown', (e) => this.startResize(e as PointerEvent, id));
     // Tabbing to an image selects it, so the keyboard shortcuts act on it.
@@ -146,7 +143,6 @@ export class Overlay {
   private updateImage(el: HTMLElement, item: ImageItem, zoom: number): void {
     const img = el.querySelector('img')!;
     if (img.getAttribute('src') !== item.src) img.src = item.src;
-    setAttr(el, 'aria-label', `Signature on page ${item.page + 1}`);
     Object.assign(el.style, {
       left: `${item.x * zoom - PAD}px`,
       top: `${item.y * zoom - PAD}px`,
@@ -240,10 +236,6 @@ export class Overlay {
     handle.addEventListener('pointerup', onUp);
     handle.addEventListener('pointercancel', onUp);
   }
-}
-
-function setAttr(el: Element, name: string, value: string): void {
-  if (el.getAttribute(name) !== value) el.setAttribute(name, value);
 }
 
 function clamp(v: number, min: number, max: number): number {

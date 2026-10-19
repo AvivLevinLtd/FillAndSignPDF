@@ -19,7 +19,7 @@ Password-protected PDFs, and PDFs locked against editing, can't be modified.
 
 ## Legal pages
 
-`accessibility.html` (accessibility statement), `privacy.html` and `terms.html` are static pages in Hebrew and English, linked from the start screen. Text in a `.todo` span is highlighted in yellow as a placeholder still to fill in.
+`privacy.html` and `terms.html` are static pages in Hebrew and English, linked from the start screen. Text in a `.todo` span is highlighted in yellow as a placeholder still to fill in.
 
 ## Development
 

@@ -46,7 +46,7 @@ export function openSignatureDialog(): Promise<string | null> {
 
   const refresh = () => {
     for (const b of tabButtons) {
-      b.setAttribute('aria-selected', String(b.dataset.tab === tab));
+      b.classList.toggle('active', b.dataset.tab === tab);
       b.tabIndex = b.dataset.tab === tab ? 0 : -1; // one tab stop; arrows move between tabs
     }
     for (const p of dialog.querySelectorAll<HTMLElement>('[data-panel]')) p.hidden = p.dataset.panel !== tab;
@@ -74,7 +74,6 @@ export function openSignatureDialog(): Promise<string | null> {
         del.type = 'button';
         del.className = 'saved-delete';
         del.title = 'Delete this saved signature';
-        del.setAttribute('aria-label', `Delete saved signature ${i + 1}`);
         del.textContent = '×';
         del.onclick = () => {
           writeSaved(loadSaved().filter((_, j) => j !== i));
@@ -143,7 +142,7 @@ export function openSignatureDialog(): Promise<string | null> {
     resolve(null);
   };
 
-  const tabList = $<HTMLElement>(dialog, '[role="tablist"]');
+  const tabList = $<HTMLElement>(dialog, '.tabs');
   const colorInputs = [...dialog.querySelectorAll<HTMLInputElement>('input[name="sig-color"]')];
   const clearBtn = $<HTMLButtonElement>(dialog, '#sig-clear');
   tabButtons.forEach((b) => b.addEventListener('click', onTab));

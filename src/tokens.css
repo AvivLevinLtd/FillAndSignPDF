@@ -1,5 +1,4 @@
-/* Colour tokens shared by the app (style.css) and the legal pages (pages.css).
-   Text/background pairs meet WCAG AA contrast (4.5:1) in both themes. */
+/* Colour tokens shared by the app (style.css) and the legal pages (pages.css). */
 :root {
   --bg: #e9ebef;
   --surface: #ffffff;
