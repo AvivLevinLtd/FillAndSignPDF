@@ -3,7 +3,11 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="description" content="Fill and sign PDF documents in your browser. Files never leave your device." />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; worker-src 'self' blob:; connect-src 'self' data: blob: ws://localhost:*; object-src 'none'; base-uri 'none'; form-action 'none'"
+    />
+    <meta name="description"content="Fill and sign PDF documents in your browser. Files never leave your device." />
     <title>Fill &amp; Sign PDF</title>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='7' fill='%232563eb'/><path d='M8 22c3-1 4-8 7-8s1 6 4 6 3-3 5-4' fill='none' stroke='white' stroke-width='2.5' stroke-linecap='round'/></svg>" />
     <script type="module" src="/src/main.ts"></script>
