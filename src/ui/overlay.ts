@@ -1,4 +1,4 @@
-import { LINE_HEIGHT, type ImageItem, type Item, type TextItem } from '../model';
+import { CHECK_POINTS, LINE_HEIGHT, type CheckItem, type ImageItem, type Item, type TextItem } from '../model';
 import type { State, Store } from '../store';
 import { FONT_FAMILY } from '../text/font';
 
@@ -53,12 +53,16 @@ export class Overlay {
       let entry = this.entries.get(item.id);
       if (!entry || entry.kind !== item.kind) {
         entry?.el.remove();
-        entry = { el: item.kind === 'text' ? this.createText(item.id) : this.createImage(item.id), kind: item.kind };
+        entry = {
+          el: item.kind === 'text' ? this.createText(item.id) : item.kind === 'check' ? this.createCheck(item.id) : this.createImage(item.id),
+          kind: item.kind,
+        };
         this.entries.set(item.id, entry);
       }
       if (entry.el.parentElement !== layer.el) layer.el.append(entry.el);
       entry.el.classList.toggle('selected', item.id === state.selectedId);
       if (item.kind === 'text') this.updateText(entry.el, item, state.zoom);
+      else if (item.kind === 'check') this.updateCheck(entry.el, item, state.zoom);
       else this.updateImage(entry.el, item, state.zoom);
     }
     for (const [id, entry] of this.entries) {
@@ -151,6 +155,33 @@ export class Overlay {
     });
   }
 
+  private createCheck(id: string): HTMLElement {
+    const el = document.createElement('div');
+    el.className = 'item item-check';
+    el.tabIndex = 0;
+    const pts = CHECK_POINTS.map(([x, y]) => `${x * 100},${y * 100}`).join(' ');
+    el.innerHTML = `
+      <svg viewBox="0 0 100 100" preserveAspectRatio="none"><polyline points="${pts}" fill="none" stroke="currentColor" stroke-width="10" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke"/></svg>
+      <button type="button" class="item-delete" title="Delete (Del)">×</button>
+      <div class="item-resize" title="Drag to resize (or press + and −)"></div>`;
+    el.querySelector('.item-resize')!.addEventListener('pointerdown', (e) => this.startResize(e as PointerEvent, id));
+    el.addEventListener('focus', () => this.store.set({ selectedId: id }));
+    this.wireCommon(el, id);
+    return el;
+  }
+
+  private updateCheck(el: HTMLElement, item: CheckItem, zoom: number): void {
+    const px = item.width * zoom;
+    el.style.color = item.color;
+    el.querySelector('polyline')!.style.strokeWidth = `${Math.max(1, px * 0.1)}px`;
+    Object.assign(el.style, {
+      left: `${item.x * zoom - PAD}px`,
+      top: `${item.y * zoom - PAD}px`,
+      width: `${px + 2 * PAD}px`,
+      height: `${item.height * zoom + 2 * PAD}px`,
+    });
+  }
+
   /** Delete button, plus dragging by the border (text) or anywhere (image). */
   private wireCommon(el: HTMLElement, id: string): void {
     el.querySelector('.item-delete')!.addEventListener('click', (e) => {
@@ -185,8 +216,8 @@ export class Overlay {
       const dy = ev.clientY - e.clientY;
       if (!moved && Math.hypot(dx, dy) < 3) return;
       moved = true;
-      const w = start.kind === 'image' ? start.width : 0;
-      const h = start.kind === 'image' ? start.height : 0;
+      const w = start.kind !== 'text' ? start.width : 0;
+      const h = start.kind !== 'text' ? start.height : 0;
       const x = clamp(start.x + dx / zoom, 0, Math.max(0, layer.width - Math.max(w, 4)));
       const y = clamp(start.y + dy / zoom, 0, Math.max(0, layer.height - Math.max(h, 4)));
       this.store.updateItem(id, { x, y }, key);
@@ -206,7 +237,7 @@ export class Overlay {
 
   private startResize(e: PointerEvent, id: string): void {
     const start = this.item(id);
-    if (start?.kind !== 'image') return;
+    if (!start || start.kind === 'text') return;
     e.preventDefault();
     e.stopPropagation();
     this.store.set({ selectedId: id });

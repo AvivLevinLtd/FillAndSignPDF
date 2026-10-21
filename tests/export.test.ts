@@ -83,4 +83,11 @@ describe('exportPdf', () => {
     expect(doc.getPageCount()).toBe(1);
     expect(out.length).toBeGreaterThan((await blankPdf()).length);
   });
+
+  it('draws check marks', async () => {
+    const items: Item[] = [{ id: 'a', kind: 'check', page: 0, x: 10, y: 10, width: 14, height: 14, color: '#000000' }];
+    const blank = await blankPdf();
+    const out = await exportPdf(blank, items, font);
+    expect(out.length).toBeGreaterThan(blank.length);
+  });
 });

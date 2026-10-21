@@ -26,6 +26,10 @@ const ZOOM_STEPS = [0.25, 0.33, 0.5, 0.67, 0.75, 0.9, 1, 1.1, 1.25, 1.5, 1.75, 2
 /** Default size of a newly placed signature, in points. */
 const SIGNATURE_WIDTH = 150;
 const SIGNATURE_MAX_HEIGHT = 70;
+/** Default size of a newly placed check mark, in points. */
+const CHECK_SIZE = 14;
+const DATE_FORMAT_KEY = 'fillandsign.dateFormat';
+const DATE_FORMATS = ['DD/MM/YYYY', 'MM/DD/YYYY', 'YYYY-MM-DD', 'DD.MM.YYYY', 'D MMM YYYY', 'MMMM D, YYYY'];
 
 const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
 
@@ -39,6 +43,9 @@ const ui = {
   dropOverlay: $('drop-overlay'),
   text: $<HTMLButtonElement>('btn-text'),
   sign: $<HTMLButtonElement>('btn-sign'),
+  check: $<HTMLButtonElement>('btn-check'),
+  date: $<HTMLButtonElement>('btn-date'),
+  dateFormat: $<HTMLSelectElement>('date-format'),
   undo: $<HTMLButtonElement>('btn-undo'),
   redo: $<HTMLButtonElement>('btn-redo'),
   zoomLevel: $<HTMLButtonElement>('btn-zoom-fit'),
@@ -171,13 +178,52 @@ function pointOnPage(e: MouseEvent, layer: HTMLElement) {
   return { x: (e.clientX - rect.left) / zoom, y: (e.clientY - rect.top) / zoom };
 }
 
-function addText(page: number, x: number, y: number): void {
+function addText(page: number, x: number, y: number, initial = ''): void {
   const { fontSize, color, items } = store.get();
   const id = newId();
   // Centre the first line vertically on the click.
-  const item: Item = { id, kind: 'text', page, x, y: Math.max(0, y - (fontSize * LINE_HEIGHT) / 2), text: '', fontSize, color };
+  const item: Item = { id, kind: 'text', page, x, y: Math.max(0, y - (fontSize * LINE_HEIGHT) / 2), text: initial, fontSize, color };
   store.commit([...items, item], { coalesceKey: `type:${id}`, patch: { selectedId: id } });
   overlay.focusItem(id);
+}
+
+function addDate(page: number, x: number, y: number): void {
+  // Keep the box: it is not empty, so leaving it does not discard it.
+  addText(page, x, y, formatDate(new Date(), ui.dateFormat.value));
+  store.set({ tool: 'select' });
+}
+
+function addCheck(page: number, x: number, y: number): void {
+  const view = doc!.pages[page];
+  const { color, items } = store.get();
+  const size = CHECK_SIZE;
+  const item: Item = {
+    id: newId(),
+    kind: 'check',
+    page,
+    width: size,
+    height: size,
+    color,
+    x: clamp(x - size / 2, 0, view.width - size),
+    y: clamp(y - size / 2, 0, view.height - size),
+  };
+  // Stay in the check tool so several boxes can be ticked in a row.
+  store.commit([...items, item], { patch: { selectedId: item.id } });
+}
+
+const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+
+function formatDate(d: Date, format: string): string {
+  const pad = (n: number) => String(n).padStart(2, '0');
+  const map: Record<string, string> = {
+    YYYY: String(d.getFullYear()),
+    MMMM: MONTHS[d.getMonth()],
+    MMM: MONTHS[d.getMonth()].slice(0, 3),
+    MM: pad(d.getMonth() + 1),
+    DD: pad(d.getDate()),
+    D: String(d.getDate()),
+  };
+  return format.replace(/YYYY|MMMM|MMM|MM|DD|D/g, (t) => map[t]);
 }
 
 async function addImage(page: number, x: number, y: number, src: string): Promise<string> {
@@ -220,6 +266,22 @@ function visibleCenter(): { page: number; x: number; y: number } | null {
   return { page, x: clamp((cx - r.left) / zoom, 0, view.width), y: clamp((cy - r.top) / zoom, 0, view.height) };
 }
 
+// Date format picker, remembered between visits and previewed with today's date.
+{
+  let saved: string | null = null;
+  try {
+    saved = localStorage.getItem(DATE_FORMAT_KEY);
+  } catch {}
+  const today = new Date();
+  for (const f of DATE_FORMATS) ui.dateFormat.append(new Option(`${formatDate(today, f)}`, f));
+  ui.dateFormat.value = saved && DATE_FORMATS.includes(saved) ? saved : DATE_FORMATS[0];
+  ui.dateFormat.addEventListener('change', () => {
+    try {
+      localStorage.setItem(DATE_FORMAT_KEY, ui.dateFormat.value);
+    } catch {}
+  });
+}
+
 // Keyboard alternatives to clicking on the page: place at the centre of the
 // screen, then move with the arrow keys.
 function addTextAtCenter(): void {
@@ -227,6 +289,14 @@ function addTextAtCenter(): void {
   if (!c) return;
   store.set({ tool: 'select', pendingImage: null });
   addText(c.page, clamp(c.x - 60, 0, doc!.pages[c.page].width - 40), c.y);
+}
+
+function addAtCenter(kind: 'check' | 'date'): void {
+  const c = visibleCenter();
+  if (!c) return;
+  store.set({ tool: 'select', pendingImage: null });
+  if (kind === 'check') addCheck(c.page, c.x, c.y);
+  else addDate(c.page, clamp(c.x - 30, 0, doc!.pages[c.page].width - 60), c.y);
 }
 
 async function addImageAtCenter(src: string): Promise<void> {
@@ -242,6 +312,8 @@ ui.pages.addEventListener('click', (e) => {
   const { x, y } = pointOnPage(e, layer);
   const { tool, pendingImage } = store.get();
   if (tool === 'text') addText(page, x, y);
+  else if (tool === 'check') addCheck(page, x, y);
+  else if (tool === 'date') addDate(page, x, y);
   else if (tool === 'image' && pendingImage) void addImage(page, x, y, pendingImage);
   else store.set({ selectedId: null });
 });
@@ -285,10 +357,11 @@ async function chooseSignature(placeNow = false): Promise<void> {
   else store.set({ tool: 'image', pendingImage: src, selectedId: null });
 }
 
-function toggleTextTool(): void {
+function toggleTool(tool: 'text' | 'check' | 'date'): void {
   if (!doc) return;
-  store.set({ tool: store.get().tool === 'text' ? 'select' : 'text', pendingImage: null });
+  store.set({ tool: store.get().tool === tool ? 'select' : tool, pendingImage: null });
 }
+const toggleTextTool = () => toggleTool('text');
 
 // ---------- Text properties ----------
 
@@ -351,6 +424,8 @@ function onState(state: State): void {
   overlay.render(state);
   ui.text.classList.toggle('active', state.tool === 'text');
   ui.sign.classList.toggle('active', state.tool === 'image');
+  ui.check.classList.toggle('active', state.tool === 'check');
+  ui.date.classList.toggle('active', state.tool === 'date');
   ui.pages.dataset.tool = state.tool;
   ui.undo.disabled = !store.canUndo();
   ui.redo.disabled = !store.canRedo();
@@ -362,7 +437,11 @@ function onState(state: State): void {
   const hint =
     state.tool === 'text'
       ? 'Click anywhere on the page to type, or press Enter to add text in the middle of the screen. Esc cancels.'
-      : state.tool === 'image'
+      : state.tool === 'check'
+        ? 'Click each checkbox to tick it, or press Enter to add a check in the middle of the screen. Esc when done.'
+        : state.tool === 'date'
+          ? "Click where today's date should go, or press Enter to add it in the middle of the screen. Esc cancels."
+          : state.tool === 'image'
         ? 'Click where the signature should go, or press Enter to place it in the middle of the screen. Esc cancels.'
         : '';
   if (hint !== ui.hint.textContent) {
@@ -395,6 +474,8 @@ ui.fileInput.addEventListener('change', () => {
 // A click with detail 0 came from the keyboard (Enter/Space on the button):
 // there is no pointer to place with, so place at the centre of the screen.
 ui.text.addEventListener('click', (e) => (e.detail === 0 ? addTextAtCenter() : toggleTextTool()));
+ui.check.addEventListener('click', (e) => (e.detail === 0 ? addAtCenter('check') : toggleTool('check')));
+ui.date.addEventListener('click', (e) => (e.detail === 0 ? addAtCenter('date') : toggleTool('date')));
 ui.sign.addEventListener('click', (e) => void chooseSignature(e.detail === 0));
 ui.undo.addEventListener('click', () => store.undo());
 ui.redo.addEventListener('click', () => store.redo());
@@ -448,7 +529,10 @@ document.addEventListener('keydown', (e) => {
   switch (e.key) {
     case 'Enter':
       if (target.closest('button, a')) return; // let the focused control handle it
-      if (state.tool === 'text') {
+      if (state.tool === 'check' || state.tool === 'date') {
+        e.preventDefault();
+        addAtCenter(state.tool);
+      } else if (state.tool === 'text') {
         e.preventDefault();
         addTextAtCenter();
       } else if (state.tool === 'image' && state.pendingImage) {
@@ -460,7 +544,7 @@ document.addEventListener('keydown', (e) => {
     case '=':
     case '-':
     case '_': {
-      if (selected?.kind !== 'image') return;
+      if (!selected || selected.kind === 'text') return;
       e.preventDefault();
       const view = doc.pages[selected.page];
       const aspect = selected.height / selected.width;
@@ -498,6 +582,14 @@ document.addEventListener('keydown', (e) => {
     case 't':
     case 'T':
       toggleTextTool();
+      break;
+    case 'c':
+    case 'C':
+      toggleTool('check');
+      break;
+    case 'd':
+    case 'D':
+      toggleTool('date');
       break;
     case 's':
     case 'S':
