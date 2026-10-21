@@ -29,7 +29,23 @@ export interface ImageItem extends ItemBase {
   height: number;
 }
 
-export type Item = TextItem | ImageItem;
+/** A tick mark for checkboxes, drawn as vector lines (the Hebrew font has no ✓). */
+export interface CheckItem extends ItemBase {
+  kind: 'check';
+  /** Square: width === height. */
+  width: number;
+  height: number;
+  color: string;
+}
+
+export type Item = TextItem | ImageItem | CheckItem;
+
+/** The tick's polyline as fractions of its box, shared by the editor and the exporter. */
+export const CHECK_POINTS: ReadonlyArray<readonly [number, number]> = [
+  [0.14, 0.54],
+  [0.38, 0.8],
+  [0.86, 0.2],
+];
 
 /** CSS line-height multiplier, shared by the on-screen editor and the exporter. */
 export const LINE_HEIGHT = 1.25;

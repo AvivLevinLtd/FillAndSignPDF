@@ -1,6 +1,6 @@
 import fontkit from '@pdf-lib/fontkit';
-import { PDFDocument, degrees, rgb, type PDFFont, type PDFImage, type PDFPage } from 'pdf-lib';
-import { LINE_HEIGHT, type ImageItem, type Item, type TextItem } from '../model';
+import { LineCapStyle, PDFDocument, degrees, rgb, type PDFFont, type PDFImage, type PDFPage } from 'pdf-lib';
+import { CHECK_POINTS, LINE_HEIGHT, type CheckItem, type ImageItem, type Item, type TextItem } from '../model';
 import { visualLine } from '../text/bidi';
 import { normalizeRotation, viewerToPdf, type PageGeometry } from './coords';
 
@@ -49,6 +49,8 @@ export async function exportPdf(
     const metrics = fontMetrics(ltrFontkit.create(fontBytes));
     for (const item of textItems) drawText(doc.getPage(item.page), item, font, metrics);
   }
+
+  for (const item of items) if (item.kind === 'check') drawCheck(doc.getPage(item.page), item);
 
   const images = new Map<string, PDFImage>();
   for (const item of imageItems) {
@@ -121,6 +123,15 @@ function drawImage(page: PDFPage, item: ImageItem, image: PDFImage): void {
     height: item.height,
     rotate: degrees(normalizeRotation(g.rotation)),
   });
+}
+
+function drawCheck(page: PDFPage, item: CheckItem): void {
+  const g = pageGeometry(page);
+  const pts = CHECK_POINTS.map(([fx, fy]) => viewerToPdf(g, item.x + fx * item.width, item.y + fy * item.height));
+  const thickness = item.width * 0.1;
+  for (let i = 0; i < pts.length - 1; i++) {
+    page.drawLine({ start: pts[i], end: pts[i + 1], thickness, color: hexToRgb(item.color), lineCap: LineCapStyle.Round });
+  }
 }
 
 function hexToRgb(hex: string) {

@@ -270,7 +270,9 @@ body.has-doc .empty {
   cursor: text;
 }
 
-.pages[data-tool='image'] .layer {
+.pages[data-tool='image'] .layer,
+.pages[data-tool='check'] .layer,
+.pages[data-tool='date'] .layer {
   cursor: crosshair;
 }
 
@@ -326,6 +328,14 @@ body.has-doc .empty {
   display: block;
   width: 100%;
   height: 100%;
+  pointer-events: none;
+}
+
+.item-check svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
   pointer-events: none;
 }
 
