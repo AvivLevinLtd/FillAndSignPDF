@@ -736,7 +736,10 @@ body.has-doc .empty {
 @media (max-width: 760px) {
   .toolbar {
     padding: 6px 8px;
-    gap: 2px;
+    gap: 4px 2px;
+    /* Wrap onto several rows so every control is visible without scrolling. */
+    flex-wrap: wrap;
+    overflow-x: visible;
   }
   .brand {
     display: none;
