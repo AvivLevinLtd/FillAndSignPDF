@@ -90,4 +90,11 @@ describe('exportPdf', () => {
     const out = await exportPdf(blank, items, font);
     expect(out.length).toBeGreaterThan(blank.length);
   });
+
+  it('draws highlights', async () => {
+    const items: Item[] = [{ id: 'a', kind: 'highlight', page: 0, x: 10, y: 10, width: 100, height: 14, color: '#fde047' }];
+    const blank = await blankPdf();
+    const out = await exportPdf(blank, items, font);
+    expect(out.length).toBeGreaterThan(blank.length);
+  });
 });

@@ -1,7 +1,7 @@
 import type { PDFDocumentProxy, PDFPageProxy } from 'pdfjs-dist';
 import './style.css';
 import { loadImage } from './image';
-import { LINE_HEIGHT, newId, type Item } from './model';
+import { HIGHLIGHT_COLOR, LINE_HEIGHT, newId, type Item } from './model';
 import { PasswordProtectedError, openPdf, renderPage } from './pdf/viewer';
 import { Store, type State } from './store';
 import { fontBytes, loadEditorFont } from './text/font';
@@ -28,6 +28,9 @@ const SIGNATURE_WIDTH = 150;
 const SIGNATURE_MAX_HEIGHT = 70;
 /** Default size of a newly placed check mark, in points. */
 const CHECK_SIZE = 14;
+/** Size of a highlight placed by a plain click, in points. */
+const HIGHLIGHT_WIDTH = 120;
+const HIGHLIGHT_HEIGHT = 14;
 const DATE_FORMAT_KEY = 'fillandsign.dateFormat';
 const DATE_FORMATS = ['DD/MM/YYYY', 'MM/DD/YYYY', 'YYYY-MM-DD', 'DD.MM.YYYY', 'D MMM YYYY', 'MMMM D, YYYY'];
 
@@ -45,6 +48,7 @@ const ui = {
   sign: $<HTMLButtonElement>('btn-sign'),
   check: $<HTMLButtonElement>('btn-check'),
   date: $<HTMLButtonElement>('btn-date'),
+  highlight: $<HTMLButtonElement>('btn-highlight'),
   dateFormat: $<HTMLSelectElement>('date-format'),
   undo: $<HTMLButtonElement>('btn-undo'),
   redo: $<HTMLButtonElement>('btn-redo'),
@@ -211,6 +215,64 @@ function addCheck(page: number, x: number, y: number): void {
   store.commit([...items, item], { patch: { selectedId: item.id } });
 }
 
+function addHighlight(page: number, x: number, y: number, width = HIGHLIGHT_WIDTH, height = HIGHLIGHT_HEIGHT): void {
+  const view = doc!.pages[page];
+  const w = Math.min(width, view.width);
+  const h = Math.min(height, view.height);
+  const item: Item = {
+    id: newId(),
+    kind: 'highlight',
+    page,
+    width: w,
+    height: h,
+    color: HIGHLIGHT_COLOR,
+    x: clamp(x - w / 2, 0, view.width - w),
+    y: clamp(y - h / 2, 0, view.height - h),
+  };
+  // Stay in the tool so several passages can be marked in a row.
+  store.commit([...store.get().items, item], { patch: { selectedId: item.id } });
+}
+
+// Dragging with the highlight tool draws the rectangle as the pointer moves.
+let swallowClick = false;
+ui.pages.addEventListener('pointerdown', (e) => {
+  const layer = e.target as HTMLElement;
+  if (store.get().tool !== 'highlight' || e.button !== 0 || !layer.classList.contains('layer')) return;
+  const page = Number(layer.parentElement!.dataset.page);
+  const view = doc!.pages[page];
+  const from = pointOnPage(e, layer);
+  const id = newId();
+  const key = `drag:${id}:0`;
+  let created = false;
+  layer.setPointerCapture(e.pointerId);
+
+  const onMove = (ev: PointerEvent) => {
+    const to = pointOnPage(ev, layer);
+    if (!created && Math.hypot(to.x - from.x, to.y - from.y) * store.get().zoom < 4) return;
+    const x = clamp(Math.min(from.x, to.x), 0, view.width);
+    const y = clamp(Math.min(from.y, to.y), 0, view.height);
+    const patch = { x, y, width: clamp(Math.max(from.x, to.x), 0, view.width) - x, height: clamp(Math.max(from.y, to.y), 0, view.height) - y };
+    if (!created) {
+      created = true;
+      const item: Item = { id, kind: 'highlight', page, color: HIGHLIGHT_COLOR, ...patch };
+      store.commit([...store.get().items, item], { coalesceKey: key, patch: { selectedId: id } });
+    } else store.updateItem(id, patch, key);
+  };
+  const onUp = () => {
+    layer.removeEventListener('pointermove', onMove);
+    layer.removeEventListener('pointerup', onUp);
+    layer.removeEventListener('pointercancel', onUp);
+    store.breakCoalescing();
+    if (created) {
+      swallowClick = true;
+      setTimeout(() => (swallowClick = false), 0);
+    }
+  };
+  layer.addEventListener('pointermove', onMove);
+  layer.addEventListener('pointerup', onUp);
+  layer.addEventListener('pointercancel', onUp);
+});
+
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 
 function formatDate(d: Date, format: string): string {
@@ -291,11 +353,12 @@ function addTextAtCenter(): void {
   addText(c.page, clamp(c.x - 60, 0, doc!.pages[c.page].width - 40), c.y);
 }
 
-function addAtCenter(kind: 'check' | 'date'): void {
+function addAtCenter(kind: 'check' | 'date' | 'highlight'): void {
   const c = visibleCenter();
   if (!c) return;
   store.set({ tool: 'select', pendingImage: null });
   if (kind === 'check') addCheck(c.page, c.x, c.y);
+  else if (kind === 'highlight') addHighlight(c.page, c.x, c.y);
   else addDate(c.page, clamp(c.x - 30, 0, doc!.pages[c.page].width - 60), c.y);
 }
 
@@ -307,13 +370,14 @@ async function addImageAtCenter(src: string): Promise<void> {
 
 ui.pages.addEventListener('click', (e) => {
   const layer = e.target as HTMLElement;
-  if (!layer.classList.contains('layer')) return;
+  if (!layer.classList.contains('layer') || swallowClick) return;
   const page = Number(layer.parentElement!.dataset.page);
   const { x, y } = pointOnPage(e, layer);
   const { tool, pendingImage } = store.get();
   if (tool === 'text') addText(page, x, y);
   else if (tool === 'check') addCheck(page, x, y);
   else if (tool === 'date') addDate(page, x, y);
+  else if (tool === 'highlight') addHighlight(page, x, y);
   else if (tool === 'image' && pendingImage) void addImage(page, x, y, pendingImage);
   else store.set({ selectedId: null });
 });
@@ -357,7 +421,7 @@ async function chooseSignature(placeNow = false): Promise<void> {
   else store.set({ tool: 'image', pendingImage: src, selectedId: null });
 }
 
-function toggleTool(tool: 'text' | 'check' | 'date'): void {
+function toggleTool(tool: 'text' | 'check' | 'date' | 'highlight'): void {
   if (!doc) return;
   store.set({ tool: store.get().tool === tool ? 'select' : tool, pendingImage: null });
 }
@@ -426,6 +490,7 @@ function onState(state: State): void {
   ui.sign.classList.toggle('active', state.tool === 'image');
   ui.check.classList.toggle('active', state.tool === 'check');
   ui.date.classList.toggle('active', state.tool === 'date');
+  ui.highlight.classList.toggle('active', state.tool === 'highlight');
   ui.pages.dataset.tool = state.tool;
   ui.undo.disabled = !store.canUndo();
   ui.redo.disabled = !store.canRedo();
@@ -441,6 +506,8 @@ function onState(state: State): void {
         ? 'Click each checkbox to tick it, or press Enter to add a check in the middle of the screen. Esc when done.'
         : state.tool === 'date'
           ? "Click where today's date should go, or press Enter to add it in the middle of the screen. Esc cancels."
+          : state.tool === 'highlight'
+          ? 'Drag over the text to highlight it, or click to drop a marker bar. Esc when done.'
           : state.tool === 'image'
         ? 'Click where the signature should go, or press Enter to place it in the middle of the screen. Esc cancels.'
         : '';
@@ -476,6 +543,7 @@ ui.fileInput.addEventListener('change', () => {
 ui.text.addEventListener('click', (e) => (e.detail === 0 ? addTextAtCenter() : toggleTextTool()));
 ui.check.addEventListener('click', (e) => (e.detail === 0 ? addAtCenter('check') : toggleTool('check')));
 ui.date.addEventListener('click', (e) => (e.detail === 0 ? addAtCenter('date') : toggleTool('date')));
+ui.highlight.addEventListener('click', (e) => (e.detail === 0 ? addAtCenter('highlight') : toggleTool('highlight')));
 ui.sign.addEventListener('click', (e) => void chooseSignature(e.detail === 0));
 ui.undo.addEventListener('click', () => store.undo());
 ui.redo.addEventListener('click', () => store.redo());
@@ -529,7 +597,7 @@ document.addEventListener('keydown', (e) => {
   switch (e.key) {
     case 'Enter':
       if (target.closest('button, a')) return; // let the focused control handle it
-      if (state.tool === 'check' || state.tool === 'date') {
+      if (state.tool === 'check' || state.tool === 'date' || state.tool === 'highlight') {
         e.preventDefault();
         addAtCenter(state.tool);
       } else if (state.tool === 'text') {
@@ -590,6 +658,10 @@ document.addEventListener('keydown', (e) => {
     case 'd':
     case 'D':
       toggleTool('date');
+      break;
+    case 'h':
+    case 'H':
+      toggleTool('highlight');
       break;
     case 's':
     case 'S':

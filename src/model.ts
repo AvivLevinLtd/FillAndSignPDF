@@ -38,7 +38,19 @@ export interface CheckItem extends ItemBase {
   color: string;
 }
 
-export type Item = TextItem | ImageItem | CheckItem;
+/** A translucent marker rectangle; free-form width and height. */
+export interface HighlightItem extends ItemBase {
+  kind: 'highlight';
+  width: number;
+  height: number;
+  color: string;
+}
+
+export type Item = TextItem | ImageItem | CheckItem | HighlightItem;
+
+/** Marker yellow, and how much of the page shows through the highlight. */
+export const HIGHLIGHT_COLOR = '#fde047';
+export const HIGHLIGHT_OPACITY = 0.4;
 
 /** The tick's polyline as fractions of its box, shared by the editor and the exporter. */
 export const CHECK_POINTS: ReadonlyArray<readonly [number, number]> = [

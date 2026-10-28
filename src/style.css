@@ -272,7 +272,8 @@ body.has-doc .empty {
 
 .pages[data-tool='image'] .layer,
 .pages[data-tool='check'] .layer,
-.pages[data-tool='date'] .layer {
+.pages[data-tool='date'] .layer,
+.pages[data-tool='highlight'] .layer {
   cursor: crosshair;
 }
 
@@ -336,6 +337,13 @@ body.has-doc .empty {
   width: 100%;
   height: 100%;
   overflow: visible;
+  pointer-events: none;
+}
+
+.item-highlight .highlight-fill {
+  width: 100%;
+  height: 100%;
+  border-radius: 2px;
   pointer-events: none;
 }
 

@@ -1,6 +1,6 @@
 import fontkit from '@pdf-lib/fontkit';
 import { LineCapStyle, PDFDocument, degrees, rgb, type PDFFont, type PDFImage, type PDFPage } from 'pdf-lib';
-import { CHECK_POINTS, LINE_HEIGHT, type CheckItem, type ImageItem, type Item, type TextItem } from '../model';
+import { CHECK_POINTS, HIGHLIGHT_OPACITY, LINE_HEIGHT, type CheckItem, type HighlightItem, type ImageItem, type Item, type TextItem } from '../model';
 import { visualLine } from '../text/bidi';
 import { normalizeRotation, viewerToPdf, type PageGeometry } from './coords';
 
@@ -42,6 +42,9 @@ export async function exportPdf(
 
   const textItems = items.filter((i): i is TextItem => i.kind === 'text' && i.text.trim() !== '');
   const imageItems = items.filter((i): i is ImageItem => i.kind === 'image');
+
+  // Under the text, so the marker never tints the filled-in words.
+  for (const item of items) if (item.kind === 'highlight') drawHighlight(doc.getPage(item.page), item);
 
   if (textItems.length > 0) {
     doc.registerFontkit(ltrFontkit);
@@ -122,6 +125,22 @@ function drawImage(page: PDFPage, item: ImageItem, image: PDFImage): void {
     width: item.width,
     height: item.height,
     rotate: degrees(normalizeRotation(g.rotation)),
+  });
+}
+
+/** Drawn as an axis-aligned rectangle spanning the item's two opposite corners. */
+function drawHighlight(page: PDFPage, item: HighlightItem): void {
+  const g = pageGeometry(page);
+  const a = viewerToPdf(g, item.x, item.y);
+  const b = viewerToPdf(g, item.x + item.width, item.y + item.height);
+  page.drawRectangle({
+    x: Math.min(a.x, b.x),
+    y: Math.min(a.y, b.y),
+    width: Math.abs(a.x - b.x),
+    height: Math.abs(a.y - b.y),
+    color: hexToRgb(item.color),
+    opacity: HIGHLIGHT_OPACITY,
+    borderWidth: 0,
   });
 }
 
