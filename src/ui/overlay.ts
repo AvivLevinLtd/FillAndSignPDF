@@ -1,4 +1,4 @@
-import { CHECK_POINTS, LINE_HEIGHT, type CheckItem, type ImageItem, type Item, type TextItem } from '../model';
+import { CHECK_POINTS, HIGHLIGHT_OPACITY, LINE_HEIGHT, type CheckItem, type HighlightItem, type ImageItem, type Item, type TextItem } from '../model';
 import type { State, Store } from '../store';
 import { FONT_FAMILY } from '../text/font';
 
@@ -54,7 +54,7 @@ export class Overlay {
       if (!entry || entry.kind !== item.kind) {
         entry?.el.remove();
         entry = {
-          el: item.kind === 'text' ? this.createText(item.id) : item.kind === 'check' ? this.createCheck(item.id) : this.createImage(item.id),
+          el: item.kind === 'text' ? this.createText(item.id) : item.kind === 'check' ? this.createCheck(item.id) : item.kind === 'highlight' ? this.createHighlight(item.id) : this.createImage(item.id),
           kind: item.kind,
         };
         this.entries.set(item.id, entry);
@@ -63,6 +63,7 @@ export class Overlay {
       entry.el.classList.toggle('selected', item.id === state.selectedId);
       if (item.kind === 'text') this.updateText(entry.el, item, state.zoom);
       else if (item.kind === 'check') this.updateCheck(entry.el, item, state.zoom);
+      else if (item.kind === 'highlight') this.updateHighlight(entry.el, item, state.zoom);
       else this.updateImage(entry.el, item, state.zoom);
     }
     for (const [id, entry] of this.entries) {
@@ -182,6 +183,32 @@ export class Overlay {
     });
   }
 
+  private createHighlight(id: string): HTMLElement {
+    const el = document.createElement('div');
+    el.className = 'item item-highlight';
+    el.tabIndex = 0;
+    el.innerHTML = `
+      <div class="highlight-fill"></div>
+      <button type="button" class="item-delete" title="Delete (Del)">×</button>
+      <div class="item-resize" title="Drag to resize"></div>`;
+    el.querySelector('.item-resize')!.addEventListener('pointerdown', (e) => this.startResize(e as PointerEvent, id));
+    el.addEventListener('focus', () => this.store.set({ selectedId: id }));
+    this.wireCommon(el, id);
+    return el;
+  }
+
+  private updateHighlight(el: HTMLElement, item: HighlightItem, zoom: number): void {
+    const fill = el.querySelector<HTMLElement>('.highlight-fill')!;
+    fill.style.background = item.color;
+    fill.style.opacity = String(HIGHLIGHT_OPACITY);
+    Object.assign(el.style, {
+      left: `${item.x * zoom - PAD}px`,
+      top: `${item.y * zoom - PAD}px`,
+      width: `${item.width * zoom + 2 * PAD}px`,
+      height: `${item.height * zoom + 2 * PAD}px`,
+    });
+  }
+
   /** Delete button, plus dragging by the border (text) or anywhere (image). */
   private wireCommon(el: HTMLElement, id: string): void {
     el.querySelector('.item-delete')!.addEventListener('click', (e) => {
@@ -249,6 +276,12 @@ export class Overlay {
     handle.setPointerCapture(e.pointerId);
 
     const onMove = (ev: PointerEvent) => {
+      if (start.kind === 'highlight') {
+        const width = clamp(start.width + (ev.clientX - e.clientX) / zoom, MIN_IMAGE, layer.width - start.x);
+        const height = clamp(start.height + (ev.clientY - e.clientY) / zoom, MIN_IMAGE / 2, layer.height - start.y);
+        this.store.updateItem(id, { width, height }, key);
+        return;
+      }
       // Follow whichever axis moved further, keeping the aspect ratio.
       const dx = (ev.clientX - e.clientX) / zoom;
       const dy = (ev.clientY - e.clientY) / zoom;

@@ -1,6 +1,6 @@
 import type { Item } from './model';
 
-export type Tool = 'select' | 'text' | 'image' | 'check' | 'date';
+export type Tool = 'select' | 'text' | 'image' | 'check' | 'date' | 'highlight';
 
 export interface State {
   items: Item[];
